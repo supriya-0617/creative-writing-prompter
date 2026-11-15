@@ -1,50 +1,51 @@
 # Creative Writing Prompter
 
-This Creative Writing Prompter is a CLI tool designed for aspiring writers. It helps overcome writer's block by offering context-aware next-word suggestions. The core is a next-word prediction engine, built from scratch, that analyzes a corpus of short stories to provide relevant word choices.
+A Python 3.12 command-line tool that suggests likely next words and generates short continuations from original fantasy, mystery, and science-fiction story samples. It uses a local n-gram model; no AI API or credentials are required.
 
-## What you are building
+## Setup
 
-**Goal.** You will build a command-line interface (CLI) tool that provides context-aware next-word suggestions for aspiring writers, helping them develop stories and overcome writer's block by sampling from a genre corpus, using a next-word prediction engine.
+From the repository root, enter the project directory:
 
-**Done when.** The tool successfully prepares a text corpus, implements n-gram counting with maximum-likelihood probabilities and add-k smoothing, generates text by sampling from the model, and offers a CLI for users to input text and receive suggestions.
-
-## Milestones
-
-Tick these off as you go, and commit after each one.
-
-- [ ] **1. Prepare a text corpus of short stories.**  
-      Hint: Use text processing techniques to clean and tokenize the corpus.
-- [ ] **2. Implement n-gram counting and maximum-likelihood probabilities.**  
-      Hint: Implement n-gram counting and maximum-likelihood estimation for probabilities.
-- [ ] **3. Add add-k smoothing to handle unseen n-grams.**  
-      Hint: Apply add-k smoothing to handle unseen n-grams.
-- [ ] **4. Develop a function to generate text by sampling from the model.**  
-      Hint: Develop a sampling function to pick the next word based on probabilities.
-- [ ] **5. Create a CLI interface for users to input text and get suggestions.**  
-      Hint: Create a command-line interface to interact with the prediction engine.
-
-## Run it
-
-You need Python 3.12 and git.
-
-```bash
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env        # then choose a model; see the comments inside
-python -m app.cli hello
-pytest
+```powershell
+cd creative-writing-prompter
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Your work goes in `app/core.py` (one stub per milestone) and `tests/test_core.py`. The first tests pass already; they
-check the plumbing.
+On macOS or Linux, create and activate the environment with:
 
-## Settings and secrets
+```bash
+cd creative-writing-prompter
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
-Model settings live in `.env`, which is ignored by git. **Never commit `.env` or paste a key into code.** If a key ever
-reaches GitHub, treat it as leaked and make a new one.
+## Use
 
-## Stretch ideas
+Get ranked next-word suggestions:
 
-- Allow users to specify the n-gram size for the prediction model.
-- Enable users to load their own text corpus for custom genre suggestions.
-- Add a feature to generate a short sequence of words or a full sentence based on a starting prompt.
+```bash
+python -m app.cli suggest "the young dragon" --genre fantasy --top 5
+```
+
+Generate a continuation (the seed makes sampling repeatable):
+
+```bash
+python -m app.cli generate "Detective Rowan" --genre mystery --words 20 --seed 7
+```
+
+Available genres are `fantasy`, `mystery`, and `science-fiction`. Use `--n 3` to select a trigram model. A custom UTF-8 text file can replace the built-in genre corpus with `--corpus path/to/stories.txt`. Both commands accept `--add-k` to set the smoothing value. Run `python -m app.cli --help` for all options.
+
+## How it works
+
+The built-in corpus contains short original stories in three genres. Text is lowercased and tokenized into words. The model counts each word after its preceding context of up to `n - 1` words. Maximum Likelihood Estimation (MLE) divides a word's context count by the total count for that context. Add-k smoothing adds `k` to every vocabulary count, allowing unseen words and contexts to receive nonzero probability. Suggestions rank these probabilities; generation samples words proportionally to them.
+
+## Tests
+
+```bash
+python -m pytest -q
+```
+
+GitHub Actions runs the tests using Python 3.12. The project does not need a `.env` file. `.env` is ignored by Git; do not commit secrets.

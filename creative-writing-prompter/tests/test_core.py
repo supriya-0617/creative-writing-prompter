@@ -2,7 +2,14 @@ import random
 
 import pytest
 
-from app.core import CORPUS, NGramModel, build_model, generate_text, load_corpus, tokenize
+from app.core import (
+    CORPUS,
+    NGramModel,
+    build_model,
+    generate_text,
+    load_corpus,
+    tokenize,
+)
 
 
 def test_builtin_corpus_has_three_genres_and_loads_each():
@@ -13,9 +20,11 @@ def test_builtin_corpus_has_three_genres_and_loads_each():
 
 def test_custom_corpus_file_loads(tmp_path):
     corpus_file = tmp_path / "stories.txt"
-    corpus_file.write_text("A small original story.", encoding="utf-8")
+    corpus_file.write_text("The moon glowed softly.", encoding="utf-8")
 
-    assert load_corpus(corpus_path=corpus_file) == ["A small original story."]
+    assert load_corpus(corpus_path=corpus_file) == ["The moon glowed softly."]
+    model = build_model(corpus_path=corpus_file)
+    assert model.suggest("the", top_k=1, add_k=0) == [("moon", 1.0)]
 
 
 def test_tokenize_lowercases_and_removes_punctuation():

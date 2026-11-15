@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 import re
 from collections import Counter, defaultdict
+from math import isfinite
 from pathlib import Path
 from typing import Iterable
 
@@ -79,15 +80,19 @@ class NGramModel:
         return self
 
     def _context(self, context: str | Iterable[str]) -> tuple[str, ...]:
-        words = tokenize(context) if isinstance(context, str) else list(context)
+        words = (
+            tokenize(context)
+            if isinstance(context, str)
+            else [word.lower() for word in context]
+        )
         return tuple(words[-(self.n - 1) :]) if self.n > 1 else ()
 
     def distribution(
         self, context: str | Iterable[str], add_k: float = 0.0
     ) -> dict[str, float]:
         """Return next-word probabilities over the vocabulary for a context."""
-        if add_k < 0:
-            raise ValueError("add_k must be non-negative")
+        if not isfinite(add_k) or add_k < 0:
+            raise ValueError("add_k must be a finite non-negative number")
         if not self.vocabulary:
             raise ValueError("Train the model before requesting probabilities")
 
@@ -99,7 +104,7 @@ class NGramModel:
             return {word: 0.0 for word in self.vocabulary}
         return {
             word: (counts[word] + add_k) / denominator
-            for word in self.vocabulary
+            for word in sorted(self.vocabulary)
         }
 
     def probability(
