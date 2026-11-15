@@ -1,35 +1,72 @@
-"""Your tests. Each milestone in README.md gets one here: write the test first, then make it pass.
+import random
 
-They start skipped. Remove the `skip` line as you work on each milestone.
-"""
 import pytest
 
-# Milestone 1: Prepare a text corpus of short stories.
-@pytest.mark.skip(reason="remove this line when you start milestone 1")
-def test_milestone_1():
-    raise NotImplementedError("write the test for milestone 1")
+from app.core import CORPUS, NGramModel, build_model, generate_text, load_corpus, tokenize
 
 
-# Milestone 2: Implement n-gram counting and maximum-likelihood probabilities.
-@pytest.mark.skip(reason="remove this line when you start milestone 2")
-def test_milestone_2():
-    raise NotImplementedError("write the test for milestone 2")
+def test_builtin_corpus_has_three_genres_and_loads_each():
+    assert len(CORPUS) >= 3
+    for genre in CORPUS:
+        assert load_corpus(genre)
 
 
-# Milestone 3: Add add-k smoothing to handle unseen n-grams.
-@pytest.mark.skip(reason="remove this line when you start milestone 3")
-def test_milestone_3():
-    raise NotImplementedError("write the test for milestone 3")
+def test_custom_corpus_file_loads(tmp_path):
+    corpus_file = tmp_path / "stories.txt"
+    corpus_file.write_text("A small original story.", encoding="utf-8")
+
+    assert load_corpus(corpus_path=corpus_file) == ["A small original story."]
 
 
-# Milestone 4: Develop a function to generate text by sampling from the model.
-@pytest.mark.skip(reason="remove this line when you start milestone 4")
-def test_milestone_4():
-    raise NotImplementedError("write the test for milestone 4")
+def test_tokenize_lowercases_and_removes_punctuation():
+    assert tokenize("Hello, WORLD! It's a tale.") == ["hello", "world", "it's", "a", "tale"]
 
 
-# Milestone 5: Create a CLI interface for users to input text and get suggestions.
-@pytest.mark.skip(reason="remove this line when you start milestone 5")
-def test_milestone_5():
-    raise NotImplementedError("write the test for milestone 5")
+def test_ngram_counts_and_mle_probabilities():
+    model = NGramModel(n=2).train(["a b a c"])
 
+    assert model.counts[("a",)] == {"b": 1, "c": 1}
+    assert model.probability("a", "b") == pytest.approx(0.5)
+    assert model.probability("a", "c") == pytest.approx(0.5)
+    assert model.probability("a", "a") == 0.0
+
+
+def test_add_k_smoothing_supports_unseen_contexts():
+    model = NGramModel(n=2).train(["a b a c"])
+    smoothed = model.distribution("a", add_k=1)
+    unseen = model.distribution("missing", add_k=1)
+
+    assert sum(smoothed.values()) == pytest.approx(1.0)
+    assert smoothed["b"] == pytest.approx(0.4)
+    assert smoothed["a"] == pytest.approx(0.2)
+    assert sum(unseen.values()) == pytest.approx(1.0)
+    assert len(set(unseen.values())) == 1
+
+
+def test_suggestions_rank_contextual_words():
+    model = NGramModel(n=2).train(["a b a c"])
+
+    assert model.suggest("a", top_k=2, add_k=0) == [("b", 0.5), ("c", 0.5)]
+
+
+def test_sampling_and_text_generation_are_repeatable():
+    model = build_model("mystery")
+    first = model.sample_next("detective", rng=random.Random(12))
+    repeated = model.sample_next("detective", rng=random.Random(12))
+    generated = generate_text(model, "Detective Rowan", word_count=6, seed=12)
+
+    assert first == repeated
+    assert generated.startswith("Detective Rowan ")
+    assert len(tokenize(generated)) == 8
+    assert generate_text(model, "start", word_count=4, seed=12) == generate_text(
+        model, "start", word_count=4, seed=12
+    )
+
+
+def test_invalid_model_inputs_are_reported():
+    with pytest.raises(ValueError, match="at least 1"):
+        NGramModel(n=0)
+    with pytest.raises(ValueError, match="Unknown genre"):
+        load_corpus("nonexistent")
+    with pytest.raises(ValueError, match="empty corpus"):
+        NGramModel().train(["!!!"])
