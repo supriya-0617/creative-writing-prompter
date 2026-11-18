@@ -1,0 +1,8 @@
+Evaluation: 3-gram vs. unigram baseline (add-k smoothing)
+Split: first two built-in stories train; final story held out per genre.
+
+Genre              Train Test tokens  Unknown   3-gram PPL  Unigram PPL
+fantasy                2          18       15       37.108       62.314
+mystery                2          20       16       37.147       60.519
+science-fiction        2          20       14       34.097       43.351
+Overall                           58       45       36.054       54.434

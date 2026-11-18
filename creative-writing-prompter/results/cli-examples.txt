@@ -1,0 +1,17 @@
+Actual output captured from the built-in genre corpora.
+
+Command:
+python -m app.cli suggest "the young dragon" --genre fantasy --top 5
+
+Output:
+guarded	0.0377
+shared	0.0377
+a	0.0189
+and	0.0189
+appeared	0.0189
+
+Command:
+python -m app.cli generate "Detective Rowan" --genre mystery --words 20 --seed 7
+
+Output:
+Detective Rowan followed but of arrived muddy footprint arrived locked after glass arrived at had stopped burned closing of vale museum glass
